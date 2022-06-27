@@ -301,8 +301,8 @@ def main():
                         help='X.509 Certificate filename')
     parser.add_argument('--username', required=True,
                         help='IPMI username with admin access')
-    parser.add_argument('--password', required=True,
-                        help='IPMI user password')
+    parser.add_argument('--password-file', required=True,
+                        help='File containing user password')
     parser.add_argument('--no-reboot', action='store_true',
                         help='The default is to reboot the IPMI after upload for the change to take effect.')
     parser.add_argument('--log-level', type=int, choices=range(0, 3), default=1,
@@ -315,6 +315,9 @@ def main():
         exit(2)
     if not os.path.isfile(args.cert_file):
         print("--cert-file '%s' doesn't exist!" % args.cert_file)
+        exit(2)
+    if not os.path.isfile(args.password_file):
+        print("--password-file '%s' doesn't exist!" % args.password_file)
         exit(2)
     if args.ipmi_url[-1] == '/':
         args.ipmi_url = args.ipmi_url[0:-1]
@@ -339,10 +342,13 @@ def main():
         requests.packages.urllib3.exceptions.InsecureRequestWarning)
     updater = create_updater(args)
 
+    with open(args.password_file, 'r') as f:
+        password = f.read().rstrip("\n")
+
     # Login to the UI and save credentials for future reuse
     if args.log_level > 0:
         print('{}\nAuthenticating on Supermicro IPMI!\n{}'.format('*'*80, '*'*80))
-    if not updater.login(args.username, args.password):
+    if not updater.login(args.username, password):
         print("Login failed. Cannot continue!")
         exit(2)
     if args.log_level > 0:
